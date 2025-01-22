@@ -30,24 +30,26 @@ def single_route(request):
     else:
         return HttpResponse("Неправильный метод запроса")
     
+
+    
 @csrf_exempt
 def register(request):
-    if request.method == 'POST':
+    if request.method == 'POST': #Проверяем, POST ли запрос
         try:
-            data = json.loads(request.body)
+            data = json.loads(request.body) #Загружаем данные из запроса из Json
             username = data.get('username')
             password = data.get('password')
-            if not username or not password:
-                return JsonResponse({"error": "Требуется имя и пароль"})
+            if not username or not password: #Если нет имени или пароля
+                return JsonResponse({"error": "Требуется имя и пароль"}) #Возвращаем Json с "ошибкой"
             
-            if User.objects.filter(username=username).exists():
-                return JsonResponse({"error": "Имя уже занято"})
+            if User.objects.filter(username=username).exists(): #Если имя уже занято
+                return JsonResponse({"error": "Имя уже занято"}) #Возвращаем Json с "ошибкой"
 
-            user = User.objects.create_user(username=username, password=password)
-            return JsonResponse({"message": "Регистрация прошла успешно"})
+            user = User.objects.create_user(username=username, password=password) #Создаем сущность пользователя
+            return JsonResponse({"message": "Регистрация прошла успешно"}) #Возвращаем Json о том, что все прошло успешно
         except Exception as e:
-            return JsonResponse({"error": str(e)})
-    return JsonResponse({"error": "Разрешены только POST запросы"})
+            return JsonResponse({"error": str(e)}) #Если произошла какая либо еще ошибка - возвращаем ее
+    return JsonResponse({"error": "Разрешены только POST запросы"}) #Возвращаем Json с "ошибкой"
 
 @csrf_exempt
 def login(request):
@@ -57,13 +59,11 @@ def login(request):
             username = data.get('username')
             password = data.get('password')
 
-            user = authenticate(username=username, password=password)
-            if user is not None:
-                login(request, user)
+            user = authenticate(username=username, password=password) #Проходим аутентификацию
+            if user is not None: #Если прошли (user не null) (извините, я эти None не могу читать нормально, у меня C# головного мозга))))))
+                login(request, user) #Логинимся
                 return JsonResponse({"message": "Вход прошел успешно"})
             return JsonResponse({"error": "Неверное имя пользователя или пароль"})
         except Exception as e:
             return JsonResponse({"error": str(e)})
     return JsonResponse({"error": "Разрешены только POST запросы"})
-
-    #Думаю выше тут все очевидно
