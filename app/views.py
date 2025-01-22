@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
 from django.views.decorators.csrf import csrf_exempt
 
 def index(request):
@@ -17,3 +17,12 @@ def post_endpoint(request):
         data = {"message": "POST запрос"}
         return JsonResponse(data)
     return JsonResponse({"message": "Неправильный метод запроса"})
+
+@csrf_exempt
+def single_route(request):
+    if request.method == 'GET':
+        return HttpResponse("Это GET запрос в /single-route")
+    elif request.method == 'POST':
+        return HttpResponseRedirect('/') # Редирект при POST-запросе
+    else:
+        return HttpResponse("Неправильный метод запроса")
