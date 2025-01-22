@@ -67,3 +67,46 @@ def login(request):
         except Exception as e:
             return JsonResponse({"error": str(e)})
     return JsonResponse({"error": "Разрешены только POST запросы"})
+
+
+
+def get_user(request, user_id):
+    try:
+        user = User.objects.get(id=user_id)
+        return JsonResponse({
+            "id": user.id,
+            "username": user.username,
+        })
+    except User.DoesNotExist: #Если пользователя не существует
+        return JsonResponse({"error": "Пользователь не найден"})
+
+@csrf_exempt
+def update_user(request, user_id):
+    if request.method == 'PUT':
+        try:
+            data = json.loads(request.body)
+            user = User.objects.get(id=user_id)
+
+            username = data.get('username')
+            
+            if username:
+                user.username = username
+            
+            user.save()
+            return JsonResponse({"message": f"Имя {user.username} успешно обновлено"})
+        except User.DoesNotExist:
+            return JsonResponse({"error": "Пользователь не найден"})
+        except Exception as e:
+            return JsonResponse({"error": str(e)})
+    return JsonResponse({"error": "Разрешены только PUT запросы"})
+
+@csrf_exempt
+def delete_user(request, user_id):
+    if request.method == 'DELETE':
+        try:
+            user = User.objects.get(id=user_id)
+            user.delete()
+            return JsonResponse({"message": "Пользователь удален успешно"})
+        except User.DoesNotExist:
+            return JsonResponse({"error": "Пользователь не найден"})
+    return JsonResponse({"error": "Разрешены только DELETE запросы"})
