@@ -5,6 +5,9 @@ import json
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from .utils import send_confirmation_email, confirm_email_token
+from django.shortcuts import get_object_or_404
+from .models import Profile
 
 def index(request):
     return HttpResponse("Тестовая страница") #Возвращает http ответ с текстом "Тестовая страница"
@@ -40,14 +43,21 @@ def register(request):
         password1 = request.POST['password1']
         password2 = request.POST['password2']
 
-        if password1 != password2: #Если пароли не равны
+        if password1 != password2:
             return render(request, 'register.html', {"error": "Пароли не совпадают"})
+        
+        if User.objects.filter(username=username).exists():
+            return render(request, 'register.html', {"error": "Имя пользователя уже используется"})
+        
+        if User.objects.filter(email=email).exists():
+            return render(request, 'register.html', {"error": "Email уже используется"})
 
         try:
             user = User.objects.create_user(username=username, email=email, password=password1) #Создаем сущность пользователя
             user.save() #Сохраняем
-            login(request, user) #Сразу же входим
-            return redirect('profile') #Перенаправление на профиль
+            Profile.objects.get_or_create(user=user)
+            send_confirmation_email(user) #Отправляем подтверждение почты
+            return render(request, 'register.html', {"success": "На вашу почту отправлено письмо для подтверждения"})
         except Exception as e:
             return render(request, 'register.html', {"error": f"Ошибка регистрации: {str(e)}"})
     
@@ -60,8 +70,11 @@ def login_view(request): #Пришлось поменять название ч�
         user = authenticate(request, username=username, password=password) #Проходим аутентификацию
 
         if user is not None: #Если прошли
-            login(request, user) #Логинимся
-            return redirect('profile') #Перенаправление на профиль
+            if user.profile.is_email_verified:
+                login(request, user) #Логинимся
+                return redirect('profile') #Перенаправление на профиль
+            else:
+                return render(request, 'login.html', {"error": "Почта не подтверждена"})
         else:
             return render(request, 'login.html', {"error": "Неверные данные"})
     
@@ -131,13 +144,21 @@ def delete_account(request):
 def edit_profile(request):
     if request.method == 'POST':
         username = request.POST['username']
-        email = request.POST['email']
 
         user = request.user
         user.username = username
-        user.email = email
             
         user.save()
         return redirect('profile')
 
     return render(request, 'edit_profile.html')
+
+def confirm_email(request, token):
+    email = confirm_email_token(token)
+    if email:
+        user = get_object_or_404(User, email=email)
+        user.profile.is_email_verified = True
+        user.profile.save()
+        return render(request, 'confirm_email.html', {"success": "Email успешно подтвержден"})
+    else:
+        return render(request, 'confirm_email.html', {"error": "Неверный или истекший токен"})

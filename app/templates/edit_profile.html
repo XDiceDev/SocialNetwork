@@ -13,11 +13,14 @@
         
         <label for="username">Имя:</label>
         <input type="text" id="username" name="username" value="{{ user.username }}" required><br>
-        
-        <label for="email">Почта:</label>
-        <input type="email" id="email" name="email" value="{{ user.email }}" required><br>
+
+        <hr>
         
         <button type="submit">Сохранить изменения</button>
+    </form>
+
+    <form action="{% url 'profile' %}" method="get">
+        <button type="submit">Назад</button>
     </form>
 </body>
 </html>

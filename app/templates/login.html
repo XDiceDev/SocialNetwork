@@ -22,5 +22,19 @@
         
         <button type="submit">Войти</button>
     </form>
+
+    <hr>
+
+    <label>Забыли пароль?</label>
+    <form action="{% url 'password_reset' %}" method="get">
+        <button type="submit">Сброс пароля</button>
+    </form>
+
+    <hr>
+
+    <label>Не зарегистрированы?</label>
+    <form action="{% url 'register' %}" method="get">
+        <button type="submit">Зарегистрироваться</button>
+    </form>
 </body>
 </html>

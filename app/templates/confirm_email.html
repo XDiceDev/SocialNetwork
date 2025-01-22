@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Подтверждение почты</title>
+</head>
+
+<body>
+    {% if success %}
+        <h1 style="color: green;">{{ success }}</h1>
+    {% elif error %}
+        <h1 style="color: red;">{{ error }}</h1>
+    {% endif %}
+    <a href="/login/">Войти</a>
+</body>
+</html>
