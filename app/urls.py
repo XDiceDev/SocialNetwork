@@ -7,4 +7,7 @@ urlpatterns = [
     path('get-endpoint-2/', views.get_endpoint_2, name='get_endpoint_2'), # Второй GET эндпоинт
     path('post-endpoint/', views.post_endpoint, name='post_endpoint'), # POST эндпоинт
     path('single-route/', views.single_route, name='single_route'),  # Единый маршрут
+
+    path('register/', views.register, name='register'), # Регистрация
+    path('login/', views.login, name='login'), # Авторизация
 ]
