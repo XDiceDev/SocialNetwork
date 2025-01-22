@@ -1,9 +1,10 @@
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
 from django.views.decorators.csrf import csrf_exempt
 import json
 from django.contrib.auth.models import User
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 
 def index(request):
     return HttpResponse("Тестовая страница") #Возвращает http ответ с текстом "Тестовая страница"
@@ -31,42 +32,40 @@ def single_route(request):
         return HttpResponse("Неправильный метод запроса")
     
 
-    
-@csrf_exempt
+
 def register(request):
     if request.method == 'POST': #Проверяем, POST ли запрос
+        username = request.POST['username'] #Получаем данные
+        email = request.POST['email']
+        password1 = request.POST['password1']
+        password2 = request.POST['password2']
+
+        if password1 != password2: #Если пароли не равны
+            return render(request, 'register.html', {"error": "Пароли не совпадают"})
+
         try:
-            data = json.loads(request.body) #Загружаем данные из запроса из Json
-            username = data.get('username')
-            password = data.get('password')
-            if not username or not password: #Если нет имени или пароля
-                return JsonResponse({"error": "Требуется имя и пароль"}) #Возвращаем Json с "ошибкой"
-            
-            if User.objects.filter(username=username).exists(): #Если имя уже занято
-                return JsonResponse({"error": "Имя уже занято"}) #Возвращаем Json с "ошибкой"
-
-            user = User.objects.create_user(username=username, password=password) #Создаем сущность пользователя
-            return JsonResponse({"message": "Регистрация прошла успешно"}) #Возвращаем Json о том, что все прошло успешно
+            user = User.objects.create_user(username=username, email=email, password=password1) #Создаем сущность пользователя
+            user.save() #Сохраняем
+            login(request, user) #Сразу же входим
+            return redirect('profile') #Перенаправление на профиль
         except Exception as e:
-            return JsonResponse({"error": str(e)}) #Если произошла какая либо еще ошибка - возвращаем ее
-    return JsonResponse({"error": "Разрешены только POST запросы"}) #Возвращаем Json с "ошибкой"
+            return render(request, 'register.html', {"error": f"Ошибка регистрации: {str(e)}"})
+    
+    return render(request, 'register.html')
 
-@csrf_exempt
-def login(request):
+def login_view(request): #Пришлось поменять название чтобы не коллайдилось с login из django
     if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            username = data.get('username')
-            password = data.get('password')
+        username = request.POST['username']
+        password = request.POST['password']
+        user = authenticate(request, username=username, password=password) #Проходим аутентификацию
 
-            user = authenticate(username=username, password=password) #Проходим аутентификацию
-            if user is not None: #Если прошли (user не null) (извините, я эти None не могу читать нормально, у меня C# головного мозга))))))
-                login(request, user) #Логинимся
-                return JsonResponse({"message": "Вход прошел успешно"})
-            return JsonResponse({"error": "Неверное имя пользователя или пароль"})
-        except Exception as e:
-            return JsonResponse({"error": str(e)})
-    return JsonResponse({"error": "Разрешены только POST запросы"})
+        if user is not None: #Если прошли
+            login(request, user) #Логинимся
+            return redirect('profile') #Перенаправление на профиль
+        else:
+            return render(request, 'login.html', {"error": "Неверные данные"})
+    
+    return render(request, 'login.html')
 
 
 
@@ -110,3 +109,35 @@ def delete_user(request, user_id):
         except User.DoesNotExist:
             return JsonResponse({"error": "Пользователь не найден"})
     return JsonResponse({"error": "Разрешены только DELETE запросы"})
+
+
+
+@login_required
+def profile(request):
+    return render(request, 'profile.html') #Просто показываем профиль
+
+def logout_view(request):
+    logout(request) #Выходим из аккаунта
+    return redirect('login') #Редирект на вход
+
+@login_required
+def delete_account(request):
+    if request.method == 'POST':
+        user = request.user
+        user.delete() # Удаляем пользователя
+        return redirect('login') #Редирект на вход
+
+@login_required
+def edit_profile(request):
+    if request.method == 'POST':
+        username = request.POST['username']
+        email = request.POST['email']
+
+        user = request.user
+        user.username = username
+        user.email = email
+            
+        user.save()
+        return redirect('profile')
+
+    return render(request, 'edit_profile.html')
